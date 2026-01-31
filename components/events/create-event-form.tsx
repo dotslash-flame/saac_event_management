@@ -163,8 +163,13 @@ export function CreateEventForm({
 
       {/* Date Preferences */}
       <div className="space-y-4">
-        <Label>Date Preferences (provide at least one)</Label>
-        {formData.datePreferences.map((pref, index) => (
+         <div>
+           <Label>Date Preferences (provide at least one)</Label>
+           <p className="text-sm text-muted-foreground mt-1">
+           Add at least one date preference. The SAAC admin will select one for approval.
+           </p>
+         </div>
+         {formData.datePreferences.map((pref, index) => (
           <Card
             key={index}
             className="p-4"
