@@ -137,6 +137,7 @@ export function CreateEventForm({
                   id={`date-${index}`}
                   type="date"
                   value={pref.date}
+                  min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => {
                     const newPrefs = [...formData.datePreferences];
                     newPrefs[index].date = e.target.value;
