@@ -356,3 +356,37 @@ export async function addDatePreference(data: {
     };
   }
 }
+// ======================================================
+// NEW: Create reimbursement record for an event
+// ======================================================
+
+export async function addReimbursementForEvent(data: {
+  eventId: string;
+  treasurerId: string;
+}): Promise<{ success: boolean; error?: string }> {
+  "use server";
+  try {
+    const supabase = createServiceRoleClient();
+
+    const { error } = await supabase
+      .schema("saac_thingy")
+      .from("reimbursement")
+      .insert({
+        id: data.eventId, // reimbursement.id MUST equal event_id
+        treasurer_id: data.treasurerId,
+      });
+
+    if (error) {
+      console.error("[addReimbursementForEvent] Error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[addReimbursementForEvent] Error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
