@@ -390,3 +390,41 @@ export async function addReimbursementForEvent(data: {
     };
   }
 }
+// Add students to a reimbursement (server-side)
+export async function addReimbursees(data: {
+  reimbursementId: string;
+  students: Array<{
+    studentId: string;
+    studentName: string;
+  }>;
+}): Promise<{ success: boolean; error?: string }> {
+  "use server";
+  try {
+    const supabase = createServiceRoleClient();
+
+    // Convert students into rows for insertion
+    const rowsToInsert = data.students.map((student) => ({
+      reimbursement_id: data.reimbursementId,
+      student_id: student.studentId,
+      student_name: student.studentName,
+    }));
+
+    const { error } = await supabase
+      .schema("saac_thingy")
+      .from("reimbursees")
+      .insert(rowsToInsert);
+
+    if (error) {
+      console.error("[addReimbursees] Error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[addReimbursees] Error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
