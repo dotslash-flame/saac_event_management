@@ -22,18 +22,22 @@ type Reimbursee = {
   studentId: string;
 };
 
-
 export default function ReimbursementPage() {
   const params = useParams();
   const eventId = params?.eventId as string;
   const [items, setItems] = useState<Item[]>([{ name: "", amount: 0 }]);
-  const [reimbursees, setReimbursees] = useState<Reimbursee[]>([{ name: "", studentId: "" }]);
+  const [reimbursees, setReimbursees] = useState<Reimbursee[]>([
+    { name: "", studentId: "" },
+  ]);
   const [billFiles, setBillFiles] = useState<File[]>([]);
   const [paymentFiles, setPaymentFiles] = useState<File[]>([]);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const totalAmount = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const totalAmount = items.reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0,
+  );
 
   // Helper to upload files to public/images/[eventId]/
   async function uploadFiles(files: File[], type: "bills" | "payments") {
@@ -52,16 +56,26 @@ export default function ReimbursementPage() {
     startTransition(async () => {
       // 1. Create reimbursement record
       const treasurerId = "TODO_TREASURER_ID"; // Replace with actual treasurer ID
-      const reimbursementRes = await addReimbursementForEvent({ eventId, treasurerId });
+      const reimbursementRes = await addReimbursementForEvent({
+        eventId,
+        treasurerId,
+      });
       if (!reimbursementRes.success) {
-        toast.error("Failed to create reimbursement: " + reimbursementRes.error);
+        toast.error(
+          "Failed to create reimbursement: " + reimbursementRes.error,
+        );
         return;
       }
 
       // 2. Add reimbursees
-      const students = reimbursees.filter(r => r.name && r.studentId).map(r => ({ studentId: r.studentId, studentName: r.name }));
+      const students = reimbursees
+        .filter((r) => r.name && r.studentId)
+        .map((r) => ({ studentId: r.studentId, studentName: r.name }));
       if (students.length > 0) {
-        const res = await addReimbursees({ reimbursementId: eventId, students });
+        const res = await addReimbursees({
+          reimbursementId: eventId,
+          students,
+        });
         if (!res.success) {
           toast.error("Failed to add reimbursees: " + res.error);
           return;
@@ -91,7 +105,10 @@ export default function ReimbursementPage() {
         <div>
           <h3 className="text-xl font-semibold mb-2">Items</h3>
           {items.map((item, index) => (
-            <div key={index} className="flex gap-4 mb-3 items-end">
+            <div
+              key={index}
+              className="flex gap-4 mb-3 items-end"
+            >
               <Input
                 placeholder="Item name"
                 value={item.name}
@@ -115,7 +132,10 @@ export default function ReimbursementPage() {
               />
             </div>
           ))}
-          <Button variant="outline" onClick={() => setItems([...items, { name: "", amount: 0 }])}>
+          <Button
+            variant="outline"
+            onClick={() => setItems([...items, { name: "", amount: 0 }])}
+          >
             Add Item
           </Button>
         </div>
@@ -123,7 +143,10 @@ export default function ReimbursementPage() {
         <div>
           <h3 className="text-xl font-semibold mb-2">Reimbursees</h3>
           {reimbursees.map((r, index) => (
-            <div key={index} className="flex gap-4 mb-3 items-end">
+            <div
+              key={index}
+              className="flex gap-4 mb-3 items-end"
+            >
               <Input
                 placeholder="Name"
                 value={r.name}
@@ -146,7 +169,12 @@ export default function ReimbursementPage() {
               />
             </div>
           ))}
-          <Button variant="outline" onClick={() => setReimbursees([...reimbursees, { name: "", studentId: "" }])}>
+          <Button
+            variant="outline"
+            onClick={() =>
+              setReimbursees([...reimbursees, { name: "", studentId: "" }])
+            }
+          >
             Add Reimbursee
           </Button>
         </div>
@@ -169,7 +197,11 @@ export default function ReimbursementPage() {
         </div>
         <Separator />
         <div className="pt-2">
-          <Button onClick={handleSubmit} disabled={isPending} className="w-full">
+          <Button
+            onClick={handleSubmit}
+            disabled={isPending}
+            className="w-full"
+          >
             {isPending ? "Submitting..." : "Create Reimbursement"}
           </Button>
         </div>
