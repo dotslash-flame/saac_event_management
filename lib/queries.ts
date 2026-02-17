@@ -356,3 +356,75 @@ export async function addDatePreference(data: {
     };
   }
 }
+// ======================================================
+// NEW: Create reimbursement record for an event
+// ======================================================
+
+export async function addReimbursementForEvent(data: {
+  eventId: string;
+  treasurerId: string;
+}): Promise<{ success: boolean; error?: string }> {
+  "use server";
+  try {
+    const supabase = createServiceRoleClient();
+
+    const { error } = await supabase
+      .schema("saac_thingy")
+      .from("reimbursement")
+      .insert({
+        id: data.eventId, // reimbursement.id MUST equal event_id
+        treasurer_id: data.treasurerId,
+      });
+
+    if (error) {
+      console.error("[addReimbursementForEvent] Error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[addReimbursementForEvent] Error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+// Add students to a reimbursement (server-side)
+export async function addReimbursees(data: {
+  reimbursementId: string;
+  students: Array<{
+    studentId: string;
+    studentName: string;
+  }>;
+}): Promise<{ success: boolean; error?: string }> {
+  "use server";
+  try {
+    const supabase = createServiceRoleClient();
+
+    // Convert students into rows for insertion
+    const rowsToInsert = data.students.map((student) => ({
+      reimbursement_id: data.reimbursementId,
+      student_id: student.studentId,
+      student_name: student.studentName,
+    }));
+
+    const { error } = await supabase
+      .schema("saac_thingy")
+      .from("reimbursees")
+      .insert(rowsToInsert);
+
+    if (error) {
+      console.error("[addReimbursees] Error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[addReimbursees] Error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}

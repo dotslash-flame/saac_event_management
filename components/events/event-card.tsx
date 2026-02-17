@@ -4,6 +4,7 @@ import { IndianRupee, DollarSign, MessageSquare, Edit } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Event } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { DatePreferencesSection } from "./date-preferences-section";
 import { BudgetSection } from "./budget-section";
 
@@ -103,7 +104,7 @@ export function EventCard({
 
           {/* Action Buttons */}
           <div className="flex gap-2 flex-wrap">
-            {/* View Comments Button */}
+            {/* View Comments */}
             <Button
               variant="outline"
               size="sm"
@@ -116,7 +117,7 @@ export function EventCard({
               : ""}
             </Button>
 
-            {/* Only show edit date preferences if event is not approved */}
+            {/* Edit Date Preferences */}
             {event.approval_status !== "approved" && (
               <Button
                 variant="outline"
@@ -127,9 +128,19 @@ export function EventCard({
                 Edit Date Preferences
               </Button>
             )}
+
+            {/* 🔹 Add Reimbursement Button */}
+            <Link href={`/events/${event.id}/reimbursement`}>
+              <Button
+                variant="outline"
+                size="sm"
+              >
+                Add Reimbursement
+              </Button>
+            </Link>
           </div>
 
-          {/* Collapsible Date Preferences */}
+          {/* Date Preferences */}
           {event.event_date_preference &&
             event.event_date_preference.length > 0 && (
               <DatePreferencesSection
