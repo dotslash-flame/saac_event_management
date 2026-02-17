@@ -253,6 +253,7 @@ export function AdminEventDialog({
 		      <div className="space-y-3 pr-3">
 			{event.event_review.map((review) => {
 			  const isAdmin = !!review.admin_id;
+			  const isSelf = isAdmin;
 			  const authorName = review.admin?.name || review.club?.club_name || "Unknown";
 			  
 			  return (
@@ -260,18 +261,18 @@ export function AdminEventDialog({
 			      key={review.id}
 			      className={cn(
 				"p-3 rounded-lg border",
-				isAdmin 
-				  ? "bg-primary/5 border-primary/20 ml-0 mr-8" 
-				  : "bg-muted/50 ml-8 mr-0"
+				isSelf 
+				  ? "bg-blue-500/10 border-blue-500/30 ml-0 mr-8" // Self (Admin) - Blue
+				  : "bg-muted/50 border-muted ml-8 mr-0" // Others (Club) - Gray
 			      )}
 			    >
 			      <div className="flex items-center gap-2 mb-2">
 				<div className={cn(
 				  "p-1 rounded-full",
-				  isAdmin ? "bg-primary/10" : "bg-muted"
+				  isSelf ? "bg-blue-500/20" : "bg-muted"
 				)}>
 				  {isAdmin ? (
-				    <Shield className="w-3 h-3 text-primary" />
+				    <Shield className="w-3 h-3 text-blue-600 dark:text-blue-400" />
 				  ) : (
 				    <UserIcon className="w-3 h-3 text-muted-foreground" />
 				  )}

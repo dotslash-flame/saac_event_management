@@ -200,28 +200,29 @@ interface CommentItemProps {
 
 function CommentItem({ comment }: CommentItemProps) {
   const isAdmin = !!comment.admin_id;
+  const isSelf = !isAdmin;
   const authorName =
     comment.admin?.name || comment.club?.club_name || "Unknown";
 
   return (
     <div
-      className={`p-3 rounded-lg ${
-        isAdmin
-          ? "bg-primary/5 border border-primary/20 ml-0 mr-8"
-          : "bg-muted/50 border ml-8 mr-0"
+      className={`p-3 rounded-lg border ${
+        isSelf
+          ? "bg-blue-500/10 border-blue-500/30 ml-0 mr-8" // Self (Club) - Blue
+          : "bg-muted/50 border-muted ml-8 mr-0" // Others (Admin) - Gray
       }`}
     >
       {/* Header */}
       <div className="flex items-center gap-2 mb-2">
         <div
           className={`p-1 rounded-full ${
-            isAdmin ? "bg-primary/10" : "bg-muted"
+            isSelf ? "bg-blue-500/20" : "bg-muted"
           }`}
         >
           {isAdmin ? (
-            <Shield className="w-3 h-3 text-primary" />
+            <Shield className="w-3 h-3 text-muted-foreground" />
           ) : (
-            <User className="w-3 h-3 text-muted-foreground" />
+            <User className="w-3 h-3 text-blue-600 dark:text-blue-400" />
           )}
         </div>
         <span className="text-sm font-medium">{authorName}</span>
