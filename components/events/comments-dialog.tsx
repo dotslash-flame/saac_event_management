@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addEventReview } from "@/lib/queries";
+import { addEventReview, addAdminEventReview } from "@/lib/queries";
 import type { EventReview } from "@/lib/types";
 import { toast } from "sonner";
 import {
@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Send, User, Shield } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CommentsDialogProps {
   eventId: string;
@@ -25,6 +24,8 @@ interface CommentsDialogProps {
   comments: EventReview[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  userEmail?: string;
+  isAdmin?: boolean;
 }
 
 export function CommentsDialog({
@@ -34,25 +35,55 @@ export function CommentsDialog({
   comments: initialComments,
   open,
   onOpenChange,
+  userEmail,
+  isAdmin = false,
 }: CommentsDialogProps) {
   const [newComment, setNewComment] = useState("");
   const [localComments, setLocalComments] =
     useState<EventReview[]>(initialComments);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Sync local comments when initialComments prop changes
   useEffect(() => {
     setLocalComments(initialComments);
   }, [initialComments]);
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [localComments]);
+
   const queryClient = useQueryClient();
 
-  const mutation = useMutation({
+  // Mutation for club comments
+  const clubMutation = useMutation({
     mutationFn: addEventReview,
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["events", clubId] });
       setNewComment("");
 
-      // Add the new comment to local state for immediate UI update
+      if (result && result.review) {
+        setLocalComments((prev) => [...prev, result.review as EventReview]);
+      }
+
+      toast.success("Comment added successfully!");
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to add comment", {
+        description: err.message || "Please try again later.",
+      });
+    },
+  });
+
+  // Mutation for admin comments
+  const adminMutation = useMutation({
+    mutationFn: addAdminEventReview,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      setNewComment("");
+
       if (result && result.review) {
         setLocalComments((prev) => [...prev, result.review as EventReview]);
       }
@@ -72,11 +103,21 @@ export function CommentsDialog({
       return;
     }
 
-    mutation.mutate({
-      eventId,
-      clubId,
-      comment: newComment.trim(),
-    });
+    if (isAdmin && userEmail) {
+      // Admin posting comment
+      adminMutation.mutate({
+        eventId,
+        adminEmail: userEmail,
+        comment: newComment.trim(),
+      });
+    } else {
+      // Club posting comment
+      clubMutation.mutate({
+        eventId,
+        clubId,
+        comment: newComment.trim(),
+      });
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -86,46 +127,49 @@ export function CommentsDialog({
     }
   };
 
+  const isPending = clubMutation.isPending || adminMutation.isPending;
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Comments</DialogTitle>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+          <DialogTitle className="flex items-center gap-2">
+            Chat
+            {isAdmin && <Badge variant="default">Admin</Badge>}
+          </DialogTitle>
           <DialogDescription>
-            View and add comments for <strong>{eventName}</strong>
+            Discussion for <strong>{eventName}</strong>
           </DialogDescription>
         </DialogHeader>
 
-        {/* Comments List */}
-        <ScrollArea className="flex-1 min-h-[50vh] max-h-[60vh] pr-4">
-          <div className="space-y-3">
-            {localComments.length === 0 ?
+        {/* Comments List - Native scrolling */}
+        <div 
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto px-6"
+        >
+          <div className="space-y-3 pb-4">
+            {localComments.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No comments yet. Be the first to add a comment!
+                No messages yet. Start the conversation!
               </p>
-            : localComments.map((comment) => (
-                <CommentItem
-                  key={comment.id}
-                  comment={comment}
-                />
+            ) : (
+              localComments.map((comment) => (
+                <CommentItem key={comment.id} comment={comment} />
               ))
-            }
+            )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Add Comment Section */}
-        <div className="border-t pt-4 mt-4">
+        <div className="border-t px-6 py-4 shrink-0">
           <div className="flex gap-3 items-center">
-            <div className="flex-1 space-y-1">
+            <div className="flex-1">
               <Textarea
-                placeholder="Type your comment here... (Ctrl+Enter to send)"
+                placeholder="Type your message here... (Ctrl+Enter to send)"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={mutation.isPending}
+                disabled={isPending}
                 rows={2}
                 className="resize-none"
               />
@@ -134,12 +178,14 @@ export function CommentsDialog({
               type="button"
               size="icon"
               onClick={handleSubmit}
-              disabled={mutation.isPending || !newComment.trim()}
+              disabled={isPending || !newComment.trim()}
               className="rounded-full h-10 w-10 shrink-0"
             >
-              {mutation.isPending ?
+              {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              : <Send className="h-4 w-4" />}
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
@@ -160,21 +206,23 @@ function CommentItem({ comment }: CommentItemProps) {
   return (
     <div
       className={`p-3 rounded-lg ${
-        isAdmin ?
-          "bg-primary/5 border border-primary/20 ml-0 mr-8"
-        : "bg-muted/50 border ml-8 mr-0"
+        isAdmin
+          ? "bg-primary/5 border border-primary/20 ml-0 mr-8"
+          : "bg-muted/50 border ml-8 mr-0"
       }`}
     >
-      {/* Header with role badge and author */}
+      {/* Header */}
       <div className="flex items-center gap-2 mb-2">
         <div
           className={`p-1 rounded-full ${
             isAdmin ? "bg-primary/10" : "bg-muted"
           }`}
         >
-          {isAdmin ?
+          {isAdmin ? (
             <Shield className="w-3 h-3 text-primary" />
-          : <User className="w-3 h-3 text-muted-foreground" />}
+          ) : (
+            <User className="w-3 h-3 text-muted-foreground" />
+          )}
         </div>
         <span className="text-sm font-medium">{authorName}</span>
         <Badge
@@ -186,7 +234,9 @@ function CommentItem({ comment }: CommentItemProps) {
       </div>
 
       {/* Comment content */}
-      <p className="text-sm leading-relaxed">{comment.comment}</p>
+      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+        {comment.comment}
+      </p>
 
       {/* Timestamp */}
       <div className="text-xs text-muted-foreground mt-2">

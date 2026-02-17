@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { Event } from "@/lib/types";
+import type { User } from "@supabase/supabase-js";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getWeekDates, formatDate, DAY_NAMES } from "@/lib/utils/date-utils";
@@ -11,28 +12,33 @@ interface WeeklyCalendarProps {
   currentDate: Date;
   events: Event[];
   onEventUpdate?: () => void;
+  user?: User;
 }
 
-export function WeeklyCalendar({ currentDate, events, onEventUpdate }: WeeklyCalendarProps) {
+export function WeeklyCalendar({ 
+  currentDate, 
+  events, 
+  onEventUpdate, 
+  user 
+}: WeeklyCalendarProps) {
   const weekDates = useMemo(() => getWeekDates(new Date(currentDate)), [currentDate]);
 
-  // Group events by date
+  // Group events by date - Normalize date strings
   const eventsByDate = useMemo(() => {
-  const map = new Map<string, Event[]>();
+    const map = new Map<string, Event[]>();
 
-  events.forEach((event) => {
-    event.event_date_preference?.forEach((pref) => {
-      // Normalize the date string to remove time/timezone
-      const dateStr = pref.date.split('T')[0]; // Get only YYYY-MM-DD part
-      if (!map.has(dateStr)) {
-        map.set(dateStr, []);
-      }
-      map.get(dateStr)?.push(event);
+    events.forEach((event) => {
+      event.event_date_preference?.forEach((pref) => {
+        const dateStr = pref.date.split('T')[0];
+        if (!map.has(dateStr)) {
+          map.set(dateStr, []);
+        }
+        map.get(dateStr)?.push(event);
+      });
     });
-  });
 
-  return map;
-}, [events]);
+    return map;
+  }, [events]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -72,6 +78,7 @@ export function WeeklyCalendar({ currentDate, events, onEventUpdate }: WeeklyCal
                       event={event}
                       date={date}
                       onEventUpdate={onEventUpdate}
+                      user={user}
                     />
                   ))
                 )}

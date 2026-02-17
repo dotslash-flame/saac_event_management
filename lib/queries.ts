@@ -4,7 +4,6 @@ import { createServiceRoleClient } from "./supabase/service-role";
 import { revalidatePath } from "next/cache";
 import type { Event, EventReview, CreateEventData } from "./types";
 
-// Re-export types for convenience
 export type {
   Event,
   EventReview,
@@ -16,7 +15,6 @@ export type {
 
 export async function createEvent(data: CreateEventData) {
   try {
-    console.log("[queries/createEvent] Starting event creation");
 
     const supabase = createServiceRoleClient();
 
@@ -34,11 +32,8 @@ export async function createEvent(data: CreateEventData) {
       .single();
 
     if (eventError) {
-      console.log("[queries/createEvent] Error creating event:", eventError);
       return { success: false, error: eventError.message };
     }
-
-    console.log("[queries/createEvent] Event created:", eventData.id);
 
     // Add date preferences
     const datePreferencesToInsert = data.datePreferences
@@ -51,12 +46,6 @@ export async function createEvent(data: CreateEventData) {
         proposer_role: "club",
       }));
 
-    console.log(
-      "[queries/createEvent] Adding",
-      datePreferencesToInsert.length,
-      "date preferences",
-    );
-
     if (datePreferencesToInsert.length > 0) {
       const { error: dateError } = await supabase
         .schema("saac_thingy")
@@ -64,22 +53,12 @@ export async function createEvent(data: CreateEventData) {
         .insert(datePreferencesToInsert);
 
       if (dateError) {
-        console.log(
-          "[queries/createEvent] Error adding date preferences:",
-          dateError,
-        );
         return { success: false, error: dateError.message };
       }
-
-      console.log("[queries/createEvent] Date preferences added successfully");
     }
 
     // Add budget request if provided
     if (data.budgetAmount && data.budgetPurpose) {
-      console.log(
-        "[queries/createEvent] Adding budget request:",
-        data.budgetAmount,
-      );
 
       const { error: budgetError } = await supabase
         .schema("saac_thingy")
@@ -91,24 +70,15 @@ export async function createEvent(data: CreateEventData) {
         });
 
       if (budgetError) {
-        console.log(
-          "[queries/createEvent] Error adding budget request:",
-          budgetError,
-        );
         return { success: false, error: budgetError.message };
       }
-
-      console.log("[queries/createEvent] Budget request added successfully");
     }
-
-    console.log("[queries/createEvent] Event creation complete");
 
     // Revalidate the events page
     revalidatePath("/events");
 
     return { success: true, event: eventData };
   } catch (error) {
-    console.error("[queries/createEvent] Error:", error);
     return {
       success: false,
       error:
@@ -117,9 +87,8 @@ export async function createEvent(data: CreateEventData) {
   }
 }
 
-// ============================================
+
 // SERVER-SIDE REACT QUERY FUNCTIONS
-// ============================================
 
 // Fetch events for a club (server-side with service role)
 export async function fetchEventsForClub(clubId: string): Promise<Event[]> {
@@ -145,14 +114,8 @@ export async function fetchEventsForClub(clubId: string): Promise<Event[]> {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("[fetchEventsForClub] Error:", error);
     throw new Error(error.message);
   }
-
-  console.log(
-    "[fetchEventsForClub] Fetched data:",
-    JSON.stringify(data, null, 2),
-  );
 
   return data as unknown as Event[];
 }
@@ -177,13 +140,11 @@ export async function addBudgetRequest(data: {
       });
 
     if (error) {
-      console.error("[addBudgetRequest] Error:", error);
       return { success: false, error: error.message };
     }
 
     return { success: true };
   } catch (error) {
-    console.error("[addBudgetRequest] Error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -219,13 +180,11 @@ export async function addEventReview(data: {
       .single();
 
     if (error) {
-      console.error("[addEventReview] Error:", error);
       return { success: false, error: error.message };
     }
 
     return { success: true, review: reviewData };
   } catch (error) {
-    console.error("[addEventReview] Error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -254,7 +213,6 @@ export async function updateDatePreferences(data: {
       .eq("event_id", data.eventId);
 
     if (deleteError) {
-      console.error("[updateDatePreferences] Delete error:", deleteError);
       return { success: false, error: deleteError.message };
     }
 
@@ -276,14 +234,12 @@ export async function updateDatePreferences(data: {
         .insert(datePreferencesToInsert);
 
       if (insertError) {
-        console.error("[updateDatePreferences] Insert error:", insertError);
         return { success: false, error: insertError.message };
       }
     }
 
     return { success: true };
   } catch (error) {
-    console.error("[updateDatePreferences] Error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -306,13 +262,11 @@ export async function deleteDatePreference(
       .eq("id", preferenceId);
 
     if (error) {
-      console.error("[deleteDatePreference] Error:", error);
       return { success: false, error: error.message };
     }
 
     return { success: true };
   } catch (error) {
-    console.error("[deleteDatePreference] Error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -343,13 +297,83 @@ export async function addDatePreference(data: {
       });
 
     if (error) {
-      console.error("[addDatePreference] Error:", error);
       return { success: false, error: error.message };
     }
 
     return { success: true };
   } catch (error) {
-    console.error("[addDatePreference] Error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+
+// Add Admin Event Review
+export async function addAdminEventReview(data: {
+  eventId: string;
+  adminEmail: string;
+  comment: string;
+}): Promise<{ success: boolean; error?: string; review?: EventReview }> {
+  "use server";
+  try {
+    const supabase = createServiceRoleClient();
+
+    // First, get or create admin record
+    const { data: admin, error: adminFetchError } = await supabase
+      .schema("saac_thingy")
+      .from("admin")
+      .select("id")
+      .eq("email_id", data.adminEmail)
+      .maybeSingle();
+
+    let adminId = admin?.id;
+
+    // If admin doesn't exist, create one
+    if (!admin) {
+      const adminName = data.adminEmail.split("@")[0];
+      const { data: newAdmin, error: createError } = await supabase
+        .schema("saac_thingy")
+        .from("admin")
+        .insert({
+          name: adminName,
+          email_id: data.adminEmail,
+        })
+        .select("id")
+        .single();
+
+      if (createError) {
+        return { success: false, error: createError.message };
+      }
+
+      adminId = newAdmin.id;
+    }
+
+    // Now create the review
+    const { data: reviewData, error } = await supabase
+      .schema("saac_thingy")
+      .from("event_review")
+      .insert({
+        event_id: data.eventId,
+        admin_id: adminId,
+        comment: data.comment,
+      })
+      .select(
+        `
+        *,
+        admin (*),
+        club (*)
+      `
+      )
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, review: reviewData };
+  } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

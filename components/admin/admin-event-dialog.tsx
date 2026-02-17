@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Event } from "@/lib/types";
+import type { User } from "@supabase/supabase-js";
 import {
   Dialog,
   DialogContent,
@@ -21,22 +22,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Clock, DollarSign, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, Clock, DollarSign, CheckCircle, XCircle, Send, Shield, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { approveEvent, rejectEvent } from "@/lib/queries-admin";
+import { addAdminEventReview } from "@/lib/queries";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AdminEventDialogProps {
   event: Event;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  user?: User;
 }
 
 export function AdminEventDialog({
   event,
   open,
   onOpenChange,
+  user,
 }: AdminEventDialogProps) {
   const router = useRouter();
   const [selectedDatePref, setSelectedDatePref] = useState<string>("");
@@ -45,12 +50,19 @@ export function AdminEventDialog({
   );
   const [budgetComments, setBudgetComments] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Chat state
+  const [adminReplyMessage, setAdminReplyMessage] = useState("");
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "approved":
+      case "approve":
       case "accepted":
         return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
       case "rejected":
+      case "reject":
         return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
       default:
         return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
@@ -94,9 +106,41 @@ export function AdminEventDialog({
     }
   };
 
+  const handleSendAdminMessage = async () => {
+    if (!adminReplyMessage.trim()) {
+      toast.error("Please enter a message");
+      return;
+    }
+
+    if (!user?.email) {
+      toast.error("User email not found");
+      return;
+    }
+
+    setIsSendingMessage(true);
+
+    const result = await addAdminEventReview({
+      eventId: event.id,
+      adminEmail: user.email,
+      comment: adminReplyMessage.trim(),
+    });
+
+    setIsSendingMessage(false);
+
+    if (result.success) {
+      toast.success("Message sent successfully");
+      setAdminReplyMessage("");
+      router.refresh();
+      onOpenChange(false);
+      setTimeout(() => onOpenChange(true), 100);
+    } else {
+      toast.error(result.error || "Failed to send message");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">{event.event_name}</DialogTitle>
           <DialogDescription>
@@ -201,30 +245,89 @@ export function AdminEventDialog({
             </div>
           )}
 
-          {/* Comments */}
-          {event.event_review && event.event_review.length > 0 && (
-            <div>
-              <Label className="text-base font-semibold">Comments</Label>
-              <div className="mt-2 space-y-2">
-                {event.event_review.map((review) => (
-                  <div
-                    key={review.id}
-                    className="p-3 rounded-lg border bg-muted/30"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium">
-                        {review.club?.club_name || review.admin?.name || "Admin"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(review.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-sm">{review.comment}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+         {/* Chat Section */}
+		<div className="space-y-3">
+		  <Label className="text-base font-semibold">Chat Messages</Label>
+		  {event.event_review && event.event_review.length > 0 ? (
+		    <ScrollArea className="h-[250px] rounded-lg border p-3">
+		      <div className="space-y-3 pr-3">
+			{event.event_review.map((review) => {
+			  const isAdmin = !!review.admin_id;
+			  const authorName = review.admin?.name || review.club?.club_name || "Unknown";
+			  
+			  return (
+			    <div
+			      key={review.id}
+			      className={cn(
+				"p-3 rounded-lg border",
+				isAdmin 
+				  ? "bg-primary/5 border-primary/20 ml-0 mr-8" 
+				  : "bg-muted/50 ml-8 mr-0"
+			      )}
+			    >
+			      <div className="flex items-center gap-2 mb-2">
+				<div className={cn(
+				  "p-1 rounded-full",
+				  isAdmin ? "bg-primary/10" : "bg-muted"
+				)}>
+				  {isAdmin ? (
+				    <Shield className="w-3 h-3 text-primary" />
+				  ) : (
+				    <UserIcon className="w-3 h-3 text-muted-foreground" />
+				  )}
+				</div>
+				<span className="text-sm font-medium">{authorName}</span>
+				<Badge 
+				  variant={isAdmin ? "default" : "outline"}
+				  className="text-xs px-1.5 py-0"
+				>
+				  {isAdmin ? "Admin" : "Club"}
+				</Badge>
+				<span className="text-xs text-muted-foreground ml-auto">
+				  {new Date(review.created_at).toLocaleDateString("en-IN", {
+				    month: "short",
+				    day: "numeric",
+				    hour: "2-digit",
+				    minute: "2-digit",
+				  })}
+				</span>
+			      </div>
+			      <p className="text-sm leading-relaxed">{review.comment}</p>
+			    </div>
+			  );
+			})}
+		      </div>
+		    </ScrollArea>
+		  ) : (
+		    <p className="text-sm text-muted-foreground italic border rounded-lg p-4 text-center">
+		      No messages yet
+		    </p>
+		  )}
+
+		  {/* Admin Reply Section */}
+		  <div className="space-y-2">
+		    <Label htmlFor="admin-message">Send Message to Club</Label>
+		    <div className="flex gap-2">
+		      <Textarea
+			id="admin-message"
+			placeholder="Type your message..."
+			value={adminReplyMessage}
+			onChange={(e) => setAdminReplyMessage(e.target.value)}
+			rows={3}
+			className="flex-1"
+			disabled={isSendingMessage}
+		      />
+		      <Button 
+			size="icon"
+			onClick={handleSendAdminMessage}
+			disabled={!adminReplyMessage.trim() || isSendingMessage}
+			className="h-10 w-10 shrink-0"
+		      >
+			<Send className="h-4 w-4" />
+		      </Button>
+		    </div>
+		  </div>
+		</div>
 
           {/* Approval Section - Only show if pending */}
           {event.approval_status === "pending" && (

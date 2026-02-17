@@ -1,65 +1,56 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { type Event, fetchEventsForClub } from "@/lib/queries";
-import type { Club } from "@/lib/types";
+import { useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import type { Event, Club } from "@/lib/types";
 import { EventList } from "@/components/events/event-list";
 import { CreateEventDialog } from "@/components/events/create-event-dialog";
-import { useClub } from "@/components/providers/club-context";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
-interface User {
-  email?: string;
-}
-
-interface Props {
+interface EventsClientProps {
   club: Club;
   initialEvents: Event[];
   user: User;
 }
 
-export default function EventsClient({ club, initialEvents }: Props) {
+export default function EventsClient({
+  club,
+  initialEvents,
+  user,
+}: EventsClientProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const { setClub, setCreateEventDialogHandler } = useClub();
-
-  // Use React Query to manage events data
-  const { data: events = [] } = useQuery({
-    queryKey: ["events", club.id],
-    queryFn: () => fetchEventsForClub(club.id) as Promise<Event[]>,
-    initialData: initialEvents,
-  });
-
-  // Set club info in context and register dialog handler
-  useEffect(() => {
-    setClub(club);
-    setCreateEventDialogHandler(() => setShowCreateDialog(true));
-
-    return () => {
-      setClub(null);
-    };
-  }, [club, setClub, setCreateEventDialogHandler]);
+  const [events] = useState<Event[]>(initialEvents);
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Your Events</h2>
+      {/* Main Content */}
+      <main className="p-6">
+        <div className="max-w-[1600px] mx-auto space-y-6">
+          {/* Page Header with Create Button */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-bold">Your Events</h2>
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
+            </Button>
+          </div>
+
+          {/* Events List */}
+          <EventList
+            events={events}
+            clubId={club.id}
+            onRefetch={() => {}}
+            user={user}
+          />
+
+          {/* Create Event Dialog */}
+          <CreateEventDialog
+            clubId={club.id}
+            open={showCreateDialog}
+            onOpenChange={setShowCreateDialog}
+          />
         </div>
-
-        {/* Events List */}
-        <EventList
-          events={events}
-          clubId={club.id}
-          onRefetch={() => {}}
-        />
-
-        {/* Create Event Dialog */}
-        <CreateEventDialog
-          clubId={club.id}
-          open={showCreateDialog}
-          onOpenChange={setShowCreateDialog}
-        />
       </main>
     </div>
   );

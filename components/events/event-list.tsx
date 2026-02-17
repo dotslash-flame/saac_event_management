@@ -1,31 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import type { Event } from "@/lib/types";
+import type { User } from "@supabase/supabase-js";
 import { EventCard } from "./event-card";
+import { Card, CardContent } from "@/components/ui/card";
+import { CommentsDialog } from "./comments-dialog";
 import { AddBudgetDialog } from "./add-budget-dialog";
 import { EditDatePreferencesDialog } from "./edit-date-preferences-dialog";
-import { CommentsDialog } from "./comments-dialog";
 
 interface EventListProps {
   events: Event[];
   clubId: string;
   onRefetch: () => void;
+  user?: User;
 }
 
-export function EventList({ events, clubId }: EventListProps) {
-  const [budgetDialogState, setBudgetDialogState] = useState<{
-    open: boolean;
-    eventId: string;
-    eventName: string;
-  }>({ open: false, eventId: "", eventName: "" });
+export function EventList({ 
+  events, 
+  clubId, 
+  onRefetch, 
+  user 
+}: EventListProps) {
+  const [budgetDialogState, setBudgetDialogState] = useState({
+    open: false,
+    eventId: "",
+    eventName: "",
+  });
 
   const [dateDialogState, setDateDialogState] = useState<{
     open: boolean;
     eventId: string;
     eventName: string;
-    currentPreferences: Event["event_date_preference"];
+    currentPreferences: any[];
   }>({
     open: false,
     eventId: "",
@@ -37,17 +44,13 @@ export function EventList({ events, clubId }: EventListProps) {
     open: boolean;
     eventId: string;
     eventName: string;
+    comments: any[];
   }>({
     open: false,
     eventId: "",
     eventName: "",
+    comments: [],
   });
-
-  // Get current comments from the events array (stays in sync with query data)
-  const currentCommentsEvent = events.find(
-    (e) => e.id === commentsDialogState.eventId,
-  );
-  const currentComments = currentCommentsEvent?.event_review || [];
 
   if (events.length === 0) {
     return (
@@ -88,42 +91,45 @@ export function EventList({ events, clubId }: EventListProps) {
                 open: true,
                 eventId: event.id,
                 eventName: event.event_name,
+                comments: event.event_review || [],
               })
             }
           />
         ))}
       </div>
 
-      {/* Dialogs */}
-      <AddBudgetDialog
-        eventId={budgetDialogState.eventId}
-        eventName={budgetDialogState.eventName}
-        clubId={clubId}
-        open={budgetDialogState.open}
-        onOpenChange={(open) =>
-          setBudgetDialogState({ ...budgetDialogState, open })
-        }
-      />
-
-      <EditDatePreferencesDialog
-        eventId={dateDialogState.eventId}
-        eventName={dateDialogState.eventName}
-        clubId={clubId}
-        currentPreferences={dateDialogState.currentPreferences}
-        open={dateDialogState.open}
-        onOpenChange={(open) =>
-          setDateDialogState({ ...dateDialogState, open })
-        }
-      />
-
+      {/* Comments Dialog */}
       <CommentsDialog
         eventId={commentsDialogState.eventId}
         eventName={commentsDialogState.eventName}
         clubId={clubId}
-        comments={currentComments}
+        comments={commentsDialogState.comments}
         open={commentsDialogState.open}
         onOpenChange={(open) =>
-          setCommentsDialogState({ ...commentsDialogState, open })
+          setCommentsDialogState((prev) => ({ ...prev, open }))
+        }
+        userEmail={user?.email}
+        isAdmin={false}
+      />
+
+      {/* Add Budget Dialog */}
+      <AddBudgetDialog
+        eventId={budgetDialogState.eventId}
+        eventName={budgetDialogState.eventName}
+        open={budgetDialogState.open}
+        onOpenChange={(open) =>
+          setBudgetDialogState((prev) => ({ ...prev, open }))
+        }
+      />
+
+      {/* Edit Date Preferences Dialog */}
+      <EditDatePreferencesDialog
+        eventId={dateDialogState.eventId}
+        eventName={dateDialogState.eventName}
+        currentPreferences={dateDialogState.currentPreferences}
+        open={dateDialogState.open}
+        onOpenChange={(open) =>
+          setDateDialogState((prev) => ({ ...prev, open }))
         }
       />
     </>

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { Event } from "@/lib/types";
+import type { User } from "@supabase/supabase-js";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
@@ -15,22 +16,27 @@ interface MonthlyCalendarProps {
   currentDate: Date;
   events: Event[];
   onEventUpdate?: () => void;
+  user?: User;
 }
 
-export function MonthlyCalendar({ currentDate, events, onEventUpdate }: MonthlyCalendarProps) {
+export function MonthlyCalendar({ 
+  currentDate, 
+  events, 
+  onEventUpdate, 
+  user 
+}: MonthlyCalendarProps) {
   const { daysInMonth, startingDayOfWeek } = useMemo(
     () => getMonthData(currentDate.getFullYear(), currentDate.getMonth()),
     [currentDate]
   );
 
-  // Group events by date
+  // Group events by date - Normalize date strings
   const eventsByDate = useMemo(() => {
     const map = new Map<string, Event[]>();
 
     events.forEach((event) => {
       event.event_date_preference?.forEach((pref) => {
-        // Normalize the date string to remove time/timezone
-        const dateStr = pref.date.split('T')[0]; // Get only YYYY-MM-DD part
+        const dateStr = pref.date.split('T')[0];
         if (!map.has(dateStr)) {
           map.set(dateStr, []);
         }
@@ -54,7 +60,7 @@ export function MonthlyCalendar({ currentDate, events, onEventUpdate }: MonthlyC
         currentDate.getMonth(),
         dayNumber
       );
-      const dateStr = formatDate(date); // This should match the database format
+      const dateStr = formatDate(date);
       const dayEvents = eventsByDate.get(dateStr) || [];
       const isToday =
         date.toDateString() === new Date().toDateString();
@@ -117,6 +123,7 @@ export function MonthlyCalendar({ currentDate, events, onEventUpdate }: MonthlyC
                       event={event}
                       compact
                       onEventUpdate={onEventUpdate}
+                      user={user}
                     />
                   ))}
                   {day.events.length > 3 && (
