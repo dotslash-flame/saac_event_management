@@ -380,3 +380,34 @@ export async function addAdminEventReview(data: {
     };
   }
 }
+
+// Fetch single event by ID (server-side)
+export async function fetchEventById(eventId: string): Promise<Event | null> {
+  "use server";
+  const supabase = createServiceRoleClient();
+
+  const { data, error } = await supabase
+    .schema("saac_thingy")
+    .from("event")
+    .select(
+      `
+      *,
+      event_date_preference!event_date_preference_event_id_fkey (*),
+      budget_request (*),
+      event_review!event_review_event_id_fkey (
+        *,
+        admin (*),
+        club (*)
+      )
+    `
+    )
+    .eq("id", eventId)
+    .single();
+
+  if (error) {
+    console.error("[fetchEventById] Error:", error);
+    return null;
+  }
+
+  return data as unknown as Event;
+}

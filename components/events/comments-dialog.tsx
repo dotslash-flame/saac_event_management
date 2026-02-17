@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addEventReview, addAdminEventReview } from "@/lib/queries";
+import { addEventReview, addAdminEventReview, fetchEventById } from "@/lib/queries";
 import type { EventReview } from "@/lib/types";
 import { toast } from "sonner";
 import {
@@ -55,12 +55,26 @@ export function CommentsDialog({
     }
   }, [localComments]);
 
+  // Auto-refresh comments every 3 seconds when dialog is open
+  useEffect(() => {
+    if (!open) return;
+
+    const interval = setInterval(async () => {
+      const freshEvent = await fetchEventById(eventId);
+      if (freshEvent && freshEvent.event_review) {
+        setLocalComments(freshEvent.event_review);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [open, eventId]);
+
   const queryClient = useQueryClient();
 
   // Mutation for club comments
   const clubMutation = useMutation({
     mutationFn: addEventReview,
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ["events", clubId] });
       setNewComment("");
 
@@ -69,6 +83,12 @@ export function CommentsDialog({
       }
 
       toast.success("Comment added successfully!");
+      
+      // Immediately fetch fresh data
+      const freshEvent = await fetchEventById(eventId);
+      if (freshEvent && freshEvent.event_review) {
+        setLocalComments(freshEvent.event_review);
+      }
     },
     onError: (err: Error) => {
       toast.error("Failed to add comment", {
@@ -80,7 +100,7 @@ export function CommentsDialog({
   // Mutation for admin comments
   const adminMutation = useMutation({
     mutationFn: addAdminEventReview,
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       setNewComment("");
 
@@ -89,6 +109,12 @@ export function CommentsDialog({
       }
 
       toast.success("Comment added successfully!");
+      
+      // Immediately fetch fresh data
+      const freshEvent = await fetchEventById(eventId);
+      if (freshEvent && freshEvent.event_review) {
+        setLocalComments(freshEvent.event_review);
+      }
     },
     onError: (err: Error) => {
       toast.error("Failed to add comment", {
@@ -142,7 +168,7 @@ export function CommentsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Comments List - Native scrolling */}
+        {/* Comments List */}
         <div 
           ref={scrollRef}
           className="flex-1 overflow-y-auto px-6"
