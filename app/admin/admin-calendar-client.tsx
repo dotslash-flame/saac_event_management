@@ -117,6 +117,7 @@ export default function AdminCalendarClient({
                         event={event}
                         compact={false}
                         onEventUpdate={refreshEvents}
+                        user={user}
                       />
                     ))}
                   </div>
@@ -138,12 +139,14 @@ export default function AdminCalendarClient({
                 currentDate={currentDate} 
                 events={scheduledEvents}
                 onEventUpdate={refreshEvents}
+                user={user}
               />
             ) : (
               <WeeklyCalendar 
                 currentDate={currentDate} 
                 events={scheduledEvents}
                 onEventUpdate={refreshEvents}
+                user={user}
               />
             )}
           </div>

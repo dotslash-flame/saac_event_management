@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Event } from "@/lib/types";
+import type { User } from "@supabase/supabase-js";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ interface CalendarEventCardProps {
   date?: Date;
   compact?: boolean;
   onEventUpdate?: () => void;
+  user?: User;
 }
 
 export function CalendarEventCard({
@@ -20,14 +22,18 @@ export function CalendarEventCard({
   date,
   compact = false,
   onEventUpdate,
+  user,
 }: CalendarEventCardProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "approved":
+      case "approve":
       case "accepted":
         return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
       case "rejected":
+      case "reject":
         return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
       default:
         return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20";
@@ -38,7 +44,7 @@ export function CalendarEventCard({
   const getTimeForDate = () => {
     if (!date) return null;
     const dateStr = date.toISOString().split("T")[0];
-    const pref = event.event_date_preference?.find((p) => p.date === dateStr);
+    const pref = event.event_date_preference?.find((p) => p.date.split('T')[0] === dateStr);
     if (pref) {
       return `${pref.start_time} - ${pref.end_time}`;
     }
@@ -50,7 +56,6 @@ export function CalendarEventCard({
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open);
     if (!open && onEventUpdate) {
-      // Refresh when dialog closes
       onEventUpdate();
     }
   };
@@ -73,6 +78,7 @@ export function CalendarEventCard({
           event={event}
           open={dialogOpen}
           onOpenChange={handleDialogClose}
+          user={user}
         />
       </>
     );
@@ -113,6 +119,7 @@ export function CalendarEventCard({
         event={event}
         open={dialogOpen}
         onOpenChange={handleDialogClose}
+        user={user}
       />
     </>
   );
