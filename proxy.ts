@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdmin } from "@/lib/admin-config";
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -16,17 +17,17 @@ export async function proxy(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
   // Refresh session if expired - required for Server Components
@@ -58,7 +59,7 @@ export async function proxy(request: NextRequest) {
   // Redirect authenticated users away from home page
   if (request.nextUrl.pathname === "/" && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/events";
+    url.pathname = isAdmin(user.email) ? "/admin" : "/events";
     return NextResponse.redirect(url);
   }
 
