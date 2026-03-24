@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Event, EventReview } from "@/lib/types";
+import type { Event } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import {
   Dialog,
@@ -22,7 +22,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Clock, DollarSign, CheckCircle, XCircle, Send, Shield, User as UserIcon } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  DollarSign,
+  CheckCircle,
+  XCircle,
+  Send,
+  Shield,
+  User as UserIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { approveEvent, rejectEvent } from "@/lib/queries-admin";
 import { addAdminEventReview, fetchEventById } from "@/lib/queries";
@@ -47,11 +56,11 @@ export function AdminEventDialog({
   const [event, setEvent] = useState<Event>(initialEvent);
   const [selectedDatePref, setSelectedDatePref] = useState<string>("");
   const [approvedBudget, setApprovedBudget] = useState<string>(
-    initialEvent.budget_request?.budget_amt?.toString() || ""
+    initialEvent.budget_request?.budget_amt?.toString() || "",
   );
   const [budgetComments, setBudgetComments] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Chat state
   const [adminReplyMessage, setAdminReplyMessage] = useState("");
   const [isSendingMessage, setIsSendingMessage] = useState(false);
@@ -152,7 +161,7 @@ export function AdminEventDialog({
     if (result.success) {
       toast.success("Message sent successfully");
       setAdminReplyMessage("");
-      
+
       // Immediately fetch fresh data
       const freshEvent = await fetchEventById(event.id);
       if (freshEvent) {
@@ -164,7 +173,10 @@ export function AdminEventDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">{event.event_name}</DialogTitle>
@@ -200,7 +212,7 @@ export function AdminEventDialog({
                   className={cn(
                     "flex items-center justify-between p-3 rounded-lg border",
                     event.accepted_date_preference_id === pref.id &&
-                      "bg-green-500/10 border-green-500/50"
+                      "bg-green-500/10 border-green-500/50",
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -221,7 +233,10 @@ export function AdminEventDialog({
                     </div>
                   </div>
                   {event.accepted_date_preference_id === pref.id && (
-                    <Badge variant="outline" className="bg-green-500/10">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-500/10"
+                    >
                       Accepted
                     </Badge>
                   )}
@@ -262,9 +277,7 @@ export function AdminEventDialog({
                   <Label className="text-sm text-muted-foreground">
                     Purpose
                   </Label>
-                  <p className="text-sm mt-1">
-                    {event.budget_request.purpose}
-                  </p>
+                  <p className="text-sm mt-1">{event.budget_request.purpose}</p>
                 </div>
               </div>
             </div>
@@ -273,62 +286,70 @@ export function AdminEventDialog({
           {/* Chat Section */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">Chat Messages</Label>
-            {event.event_review && event.event_review.length > 0 ? (
-              <ScrollArea className="h-[250px] rounded-lg border p-3">
+            {event.event_review && event.event_review.length > 0 ?
+              <ScrollArea className="h-62.5 rounded-lg border p-3">
                 <div className="space-y-3 pr-3">
                   {event.event_review.map((review) => {
                     const isAdmin = !!review.admin_id;
                     const isSelf = isAdmin;
-                    const authorName = review.admin?.name || review.club?.club_name || "Unknown";
-                    
+                    const authorName =
+                      review.admin?.name || review.club?.club_name || "Unknown";
+
                     return (
                       <div
                         key={review.id}
                         className={cn(
                           "p-3 rounded-lg border",
-                          isSelf 
-                            ? "bg-blue-500/10 border-blue-500/30 ml-0 mr-8"
-                            : "bg-muted/50 border-muted ml-8 mr-0"
+                          isSelf ?
+                            "bg-blue-500/10 border-blue-500/30 ml-0 mr-8"
+                          : "bg-muted/50 border-muted ml-8 mr-0",
                         )}
                       >
                         <div className="flex items-center gap-2 mb-2">
-                          <div className={cn(
-                            "p-1 rounded-full",
-                            isSelf ? "bg-blue-500/20" : "bg-muted"
-                          )}>
-                            {isAdmin ? (
-                              <Shield className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                            ) : (
-                              <UserIcon className="w-3 h-3 text-muted-foreground" />
+                          <div
+                            className={cn(
+                              "p-1 rounded-full",
+                              isSelf ? "bg-blue-500/20" : "bg-muted",
                             )}
+                          >
+                            {isAdmin ?
+                              <Shield className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                            : <UserIcon className="w-3 h-3 text-muted-foreground" />
+                            }
                           </div>
-                          <span className="text-sm font-medium">{authorName}</span>
-                          <Badge 
+                          <span className="text-sm font-medium">
+                            {authorName}
+                          </span>
+                          <Badge
                             variant={isAdmin ? "default" : "outline"}
                             className="text-xs px-1.5 py-0"
                           >
                             {isAdmin ? "Admin" : "Club"}
                           </Badge>
                           <span className="text-xs text-muted-foreground ml-auto">
-                            {new Date(review.created_at).toLocaleDateString("en-IN", {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {new Date(review.created_at).toLocaleDateString(
+                              "en-IN",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )}
                           </span>
                         </div>
-                        <p className="text-sm leading-relaxed">{review.comment}</p>
+                        <p className="text-sm leading-relaxed">
+                          {review.comment}
+                        </p>
                       </div>
                     );
                   })}
                 </div>
               </ScrollArea>
-            ) : (
-              <p className="text-sm text-muted-foreground italic border rounded-lg p-4 text-center">
+            : <p className="text-sm text-muted-foreground italic border rounded-lg p-4 text-center">
                 No messages yet
               </p>
-            )}
+            }
 
             {/* Admin Reply Section */}
             <div className="space-y-2">
@@ -343,7 +364,7 @@ export function AdminEventDialog({
                   className="flex-1"
                   disabled={isSendingMessage}
                 />
-                <Button 
+                <Button
                   size="icon"
                   onClick={handleSendAdminMessage}
                   disabled={!adminReplyMessage.trim() || isSendingMessage}
@@ -372,7 +393,10 @@ export function AdminEventDialog({
                   </SelectTrigger>
                   <SelectContent>
                     {event.event_date_preference?.map((pref) => (
-                      <SelectItem key={pref.id} value={pref.id}>
+                      <SelectItem
+                        key={pref.id}
+                        value={pref.id}
+                      >
                         {new Date(pref.date).toLocaleDateString("en-IN", {
                           weekday: "short",
                           year: "numeric",

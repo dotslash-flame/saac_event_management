@@ -26,7 +26,7 @@ export default function EventsClient({
     <div className="min-h-screen bg-background">
       {/* Main Content */}
       <main className="p-6">
-        <div className="max-w-[1600px] mx-auto space-y-6">
+        <div className="max-w-400 mx-auto space-y-6">
           {/* Page Header with Create Button */}
           <div className="flex items-center justify-between">
             <h2 className="text-3xl font-bold">Your Events</h2>

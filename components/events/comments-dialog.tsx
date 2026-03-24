@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addEventReview, addAdminEventReview, fetchEventById } from "@/lib/queries";
+import {
+  addEventReview,
+  addAdminEventReview,
+  fetchEventById,
+} from "@/lib/queries";
 import type { EventReview } from "@/lib/types";
 import { toast } from "sonner";
 import {
@@ -83,7 +87,7 @@ export function CommentsDialog({
       }
 
       toast.success("Comment added successfully!");
-      
+
       // Immediately fetch fresh data
       const freshEvent = await fetchEventById(eventId);
       if (freshEvent && freshEvent.event_review) {
@@ -109,7 +113,7 @@ export function CommentsDialog({
       }
 
       toast.success("Comment added successfully!");
-      
+
       // Immediately fetch fresh data
       const freshEvent = await fetchEventById(eventId);
       if (freshEvent && freshEvent.event_review) {
@@ -156,7 +160,10 @@ export function CommentsDialog({
   const isPending = clubMutation.isPending || adminMutation.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -169,20 +176,22 @@ export function CommentsDialog({
         </DialogHeader>
 
         {/* Comments List */}
-        <div 
+        <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto px-6"
         >
           <div className="space-y-3 pb-4">
-            {localComments.length === 0 ? (
+            {localComments.length === 0 ?
               <p className="text-sm text-muted-foreground text-center py-8">
                 No messages yet. Start the conversation!
               </p>
-            ) : (
-              localComments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} />
+            : localComments.map((comment) => (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                />
               ))
-            )}
+            }
           </div>
         </div>
 
@@ -207,11 +216,9 @@ export function CommentsDialog({
               disabled={isPending || !newComment.trim()}
               className="rounded-full h-10 w-10 shrink-0"
             >
-              {isPending ? (
+              {isPending ?
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
+              : <Send className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -233,9 +240,9 @@ function CommentItem({ comment }: CommentItemProps) {
   return (
     <div
       className={`p-3 rounded-lg border ${
-        isSelf
-          ? "bg-blue-500/10 border-blue-500/30 ml-0 mr-8" // Self (Club) - Blue
-          : "bg-muted/50 border-muted ml-8 mr-0" // Others (Admin) - Gray
+        isSelf ?
+          "bg-blue-500/10 border-blue-500/30 ml-0 mr-8" // Self (Club) - Blue
+        : "bg-muted/50 border-muted ml-8 mr-0" // Others (Admin) - Gray
       }`}
     >
       {/* Header */}
@@ -245,11 +252,9 @@ function CommentItem({ comment }: CommentItemProps) {
             isSelf ? "bg-blue-500/20" : "bg-muted"
           }`}
         >
-          {isAdmin ? (
+          {isAdmin ?
             <Shield className="w-3 h-3 text-muted-foreground" />
-          ) : (
-            <User className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-          )}
+          : <User className="w-3 h-3 text-blue-600 dark:text-blue-400" />}
         </div>
         <span className="text-sm font-medium">{authorName}</span>
         <Badge
@@ -261,7 +266,7 @@ function CommentItem({ comment }: CommentItemProps) {
       </div>
 
       {/* Comment content */}
-      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+      <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-words">
         {comment.comment}
       </p>
 
