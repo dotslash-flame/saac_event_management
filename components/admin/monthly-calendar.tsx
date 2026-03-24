@@ -5,11 +5,7 @@ import type { Event } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import {
-  getMonthData,
-  formatDate,
-  DAY_NAMES,
-} from "@/lib/utils/date-utils";
+import { getMonthData, formatDate, DAY_NAMES } from "@/lib/utils/date-utils";
 import { CalendarEventCard } from "./calendar-event-card";
 
 interface MonthlyCalendarProps {
@@ -19,15 +15,15 @@ interface MonthlyCalendarProps {
   user?: User;
 }
 
-export function MonthlyCalendar({ 
-  currentDate, 
-  events, 
-  onEventUpdate, 
-  user 
+export function MonthlyCalendar({
+  currentDate,
+  events,
+  onEventUpdate,
+  user,
 }: MonthlyCalendarProps) {
   const { daysInMonth, startingDayOfWeek } = useMemo(
     () => getMonthData(currentDate.getFullYear(), currentDate.getMonth()),
-    [currentDate]
+    [currentDate],
   );
 
   // Group events by date - Normalize date strings
@@ -36,7 +32,7 @@ export function MonthlyCalendar({
 
     events.forEach((event) => {
       event.event_date_preference?.forEach((pref) => {
-        const dateStr = pref.date.split('T')[0];
+        const dateStr = pref.date.split("T")[0];
         if (!map.has(dateStr)) {
           map.set(dateStr, []);
         }
@@ -58,12 +54,11 @@ export function MonthlyCalendar({
       const date = new Date(
         currentDate.getFullYear(),
         currentDate.getMonth(),
-        dayNumber
+        dayNumber,
       );
       const dateStr = formatDate(date);
       const dayEvents = eventsByDate.get(dateStr) || [];
-      const isToday =
-        date.toDateString() === new Date().toDateString();
+      const isToday = date.toDateString() === new Date().toDateString();
 
       days.push({
         date,
@@ -101,8 +96,8 @@ export function MonthlyCalendar({
           <div
             key={index}
             className={cn(
-              "bg-background min-h-[120px] p-2",
-              !day.isCurrentMonth && "bg-muted/30"
+              "bg-background min-h-30 p-2",
+              !day.isCurrentMonth && "bg-muted/30",
             )}
           >
             {day.isCurrentMonth && (
@@ -111,7 +106,7 @@ export function MonthlyCalendar({
                   className={cn(
                     "text-sm font-medium mb-2",
                     day.isToday &&
-                      "inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground"
+                      "inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground",
                   )}
                 >
                   {day.dayNumber}

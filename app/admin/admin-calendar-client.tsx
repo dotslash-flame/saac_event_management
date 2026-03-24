@@ -8,10 +8,7 @@ import { WeeklyCalendar } from "@/components/admin/weekly-calendar";
 import { CalendarToolbar } from "@/components/admin/calendar-toolbar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarEventCard } from "@/components/admin/calendar-event-card";
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -47,10 +44,10 @@ export default function AdminCalendarClient({
 
   // Separate events with and without dates
   const scheduledEvents = events.filter(
-    (e) => e.event_date_preference && e.event_date_preference.length > 0
+    (e) => e.event_date_preference && e.event_date_preference.length > 0,
   );
   const unscheduledEvents = events.filter(
-    (e) => !e.event_date_preference || e.event_date_preference.length === 0
+    (e) => !e.event_date_preference || e.event_date_preference.length === 0,
   );
 
   const handlePrevious = () => {
@@ -87,7 +84,7 @@ export default function AdminCalendarClient({
       <SidebarInset>
         <AppHeader isAdmin={true} />
         <main className="flex-1 overflow-auto p-6">
-          <div className="max-w-[1600px] mx-auto space-y-6">
+          <div className="max-w-400 mx-auto space-y-6">
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold">Admin Calendar</h1>
               <div className="flex items-center gap-3">
@@ -95,7 +92,8 @@ export default function AdminCalendarClient({
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 )}
                 <div className="text-sm text-muted-foreground">
-                  {scheduledEvents.length} scheduled • {unscheduledEvents.length} unscheduled
+                  {scheduledEvents.length} scheduled •{" "}
+                  {unscheduledEvents.length} unscheduled
                 </div>
               </div>
             </div>
@@ -134,21 +132,20 @@ export default function AdminCalendarClient({
               onToday={handleToday}
             />
 
-            {view === "month" ? (
-              <MonthlyCalendar 
-                currentDate={currentDate} 
+            {view === "month" ?
+              <MonthlyCalendar
+                currentDate={currentDate}
                 events={scheduledEvents}
                 onEventUpdate={refreshEvents}
                 user={user}
               />
-            ) : (
-              <WeeklyCalendar 
-                currentDate={currentDate} 
+            : <WeeklyCalendar
+                currentDate={currentDate}
                 events={scheduledEvents}
                 onEventUpdate={refreshEvents}
                 user={user}
               />
-            )}
+            }
           </div>
         </main>
       </SidebarInset>
