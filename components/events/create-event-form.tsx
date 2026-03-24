@@ -71,19 +71,58 @@ export function CreateEventForm({
       });
     },
   });
+  
+
+	const validateTimeRange = (startTime: string, endTime: string): boolean => {
+	  if (!startTime || !endTime) return true; // Skip if either is empty
+	  return endTime > startTime;
+	};
+
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    createEventMutation.mutate({
-      club_id: clubId,
-      event_name: formData.eventName,
-      event_descriptions: formData.eventDescription,
-      datePreferences: formData.datePreferences,
-      budgetAmount: formData.budgetAmount,
-      budgetPurpose: formData.budgetPurpose,
-    });
-  };
+  // Validate that at least one date preference is filled
+  const hasValidDatePref = formData.datePreferences.some(
+    (pref) => pref.date && pref.startTime && pref.endTime
+  );
+
+  if (!hasValidDatePref) {
+    toast.error("Please provide at least one date preference");
+    return;
+  }
+
+  // Validate time ranges
+  const invalidTimes = formData.datePreferences.some(
+    (pref) => 
+      pref.startTime && 
+      pref.endTime && 
+      !validateTimeRange(pref.startTime, pref.endTime)
+  );
+
+  if (invalidTimes) {
+    toast.error("End time must be after start time");
+    return;
+  }
+
+  // Validate budget fields (both or neither)
+  if (
+    (formData.budgetAmount && !formData.budgetPurpose) ||
+    (!formData.budgetAmount && formData.budgetPurpose)
+  ) {
+    toast.error("Please provide both budget amount and purpose, or leave both empty");
+    return;
+  }
+
+  createEventMutation.mutate({
+    club_id: clubId,
+    event_name: formData.eventName,
+    event_descriptions: formData.eventDescription,
+    datePreferences: formData.datePreferences,
+    budgetAmount: formData.budgetAmount,
+    budgetPurpose: formData.budgetPurpose,
+  });
+};
 
   return (
     <form
@@ -124,8 +163,13 @@ export function CreateEventForm({
 
       {/* Date Preferences */}
       <div className="space-y-4">
-        <Label>Date Preferences (provide at least one)</Label>
-        {formData.datePreferences.map((pref, index) => (
+         <div>
+           <Label>Date Preferences (provide at least one)</Label>
+           <p className="text-sm text-muted-foreground mt-1">
+           Add at least one date preference. The SAAC admin will select one for approval.
+           </p>
+         </div>
+         {formData.datePreferences.map((pref, index) => (
           <Card
             key={index}
             className="p-4"
@@ -137,6 +181,7 @@ export function CreateEventForm({
                   id={`date-${index}`}
                   type="date"
                   value={pref.date}
+                  min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => {
                     const newPrefs = [...formData.datePreferences];
                     newPrefs[index].date = e.target.value;

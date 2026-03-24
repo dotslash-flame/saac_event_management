@@ -17,11 +17,13 @@ interface EventCardProps {
 function getStatusColor(status: string) {
   switch (status) {
     case "approved":
-      return "bg-chart-2/20 text-chart-2 border border-chart-2/30";
+    case "accepted":
+      return "bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/30";
     case "rejected":
-      return "bg-destructive/20 text-destructive border border-destructive/30";
+      return "bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/30";
+    case "pending":
     default:
-      return "bg-chart-4/20 text-chart-4 border border-chart-4/30";
+      return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border border-yellow-500/30";
   }
 }
 
